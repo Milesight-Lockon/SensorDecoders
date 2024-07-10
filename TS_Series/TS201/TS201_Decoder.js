@@ -63,6 +63,11 @@ function milesightDeviceDecode(bytes) {
             decoded.tsl_version = readTslVersion(bytes.slice(i, i + 2));
             i += 2;
         }
+        // RESET EVENT
+        else if (channel_id === 0xff && channel_type === 0xfe) {
+            decoded.reset_event = 1;
+            i += 1;
+        }
         // BATTERY
         else if (channel_id === 0x01 && channel_type === 0x75) {
             decoded.battery = bytes[i];
@@ -72,6 +77,18 @@ function milesightDeviceDecode(bytes) {
         else if (channel_id === 0x03 && channel_type === 0x67) {
             decoded.temperature = readInt16LE(bytes.slice(i, i + 2)) / 10;
             i += 2;
+        }
+        // SENSOR ID
+        else if (channel_id === 0xff && channel_type === 0xa0) {
+            var data = readUInt8(bytes[i]);
+            var channel_idx = data >>> 4;
+            var sensor_type = data & 0x0f;
+            var sensor_id = readSerialNumber(bytes.slice(i + 1, i + 9));
+            var sensor_chn_name = "sensor_" + channel_idx;
+            i += 9;
+
+            decoded[sensor_chn_name + "_type"] = sensor_type;
+            decoded[sensor_chn_name + "_id"] = sensor_id;
         }
         // TEMPERATURE THRESHOLD ALARM
         else if (channel_id === 0x83 && channel_type === 0x67) {
@@ -96,10 +113,10 @@ function milesightDeviceDecode(bytes) {
             decoded.event = decoded.event || [];
             decoded.event.push(data);
         }
-        // TEMPERATURE ERROR
+        // TEMPERATURE EXCEPTION
         else if (channel_id === 0xb3 && channel_type === 0x67) {
             var data = {};
-            data.temperature_error = readErrorType(bytes[i]);
+            data.temperature_exception = readErrorType(bytes[i]);
             i += 1;
 
             decoded.event = decoded.event || [];
