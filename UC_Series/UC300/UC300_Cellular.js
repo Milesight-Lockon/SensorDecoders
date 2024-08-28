@@ -90,6 +90,7 @@ const REG_LABELS = ["REG_COIL", "REG_DISCRETE", "REG_INPUT", "REG_HOLD_INT16", "
 const isCounterMode = (mode) => mode === 2 || mode === 3;
 
 const decode = (reader) => {
+    const version = reader.readUInt8();
     const timestamp = reader.readUInt32LE();
     const mobileSignal = reader.readUInt8();
     const doutEnabled = reader.readBits(2);
@@ -133,9 +134,19 @@ const decode = (reader) => {
     while (reader.getLeftSize() > 1) {
         const mode1 = reader.readUInt8();
         const mode2 = reader.readUInt8();
-        const index = (mode1 & 0b11110000) >> 4;
-        const regType = REG_LABELS[mode1 & 0b1111];
-        const sign = (mode2 & 0b10000000) >> 7;
+
+        // version: v1.0
+        if (mode1 === 0x0a) {
+            var index = mode1 >>> 4;
+            var regType = REG_LABELS[mode1 & 0x0f];
+        }
+        // version: v1.1
+        else {
+            var index = mode1 >>> 3;
+            var regType = REG_LABELS[mode1 & 0x07];
+        }
+
+        const sign = mode2 >>> 7;
         // const decimal = (mode2 & 0b1110000) >> 4;
         const decimal = 0;
         const collectSuccess = (mode2 & 0b1000) >> 3 === 1;
@@ -193,6 +204,7 @@ const decode = (reader) => {
     }
 
     return {
+        version,
         timestamp,
         mobileSignal,
         doutEnabled,
@@ -216,7 +228,6 @@ function decode_UART_F4(buffer) {
         startFlag: reader.readUInt8(),
         type: reader.readUInt8(),
         length: reader.readUInt16LE(),
-        version: reader.readUInt8(),
         ...decode(reader),
         endFlag: reader.readUInt8(),
     };
