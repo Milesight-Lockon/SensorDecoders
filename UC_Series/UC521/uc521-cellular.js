@@ -10,11 +10,10 @@ function decodePayload(bytes) {
 
     var payload = {};
     payload.startFlag = buffer.readUInt8();
-    payload.id = buffer.readUInt8();
-    payload.reserved = buffer.readUInt8();
+    payload.tslVersion = readTslVersion(buffer.readBytes(2));
     payload.length = buffer.readUInt16BE();
     payload.flag = buffer.readUInt8();
-    payload.tslVersion = readTslVersion(buffer.readBytes(2));
+    payload.frameCount = buffer.readUInt16BE();
     payload.protocolVersion = buffer.readUInt8();
     payload.firmwareVersion = buffer.readAscii(4);
     payload.hardwareVersion = buffer.readAscii(4);
@@ -79,7 +78,7 @@ function milesightDeviceDecode(bytes) {
         }
         // VALVE PULSE
         else if (includes(valve_pulse_chns, channel_id) && channel_type === 0xc8) {
-            var valve_pulse_channel_name = "valve_pulse_" + (valve_pulse_chns.indexOf(channel_id) + 1);
+            var valve_pulse_channel_name = "valve_" + (valve_pulse_chns.indexOf(channel_id) + 1);
             decoded[valve_pulse_channel_name + "_pulse"] = buffer.readUInt32LE();
         }
         // GPIO
@@ -122,7 +121,7 @@ function milesightDeviceDecode(bytes) {
                     event.source = "Valve 2 Opening";
                     break;
                 case 0x03:
-                    event.source = "Valve 1 Opening OR Valve 2 Opening";
+                    event.source = "Valve 1 Opening or Valve 2 Opening";
                     break;
             }
             switch (condition_type) {
@@ -146,7 +145,7 @@ function milesightDeviceDecode(bytes) {
                     break;
             }
             event.pressure = pressure;
-            event.alarm = alarm === 0 ? "Threshold Alarm Release" : "Threshold Alarm";
+            event.alarm = alarm === 0 ? "Pipe Pressure Threshold Alarm Release" : "Pipe Pressure Threshold Alarm";
             decoded.pipe_pressure = pressure;
             decoded.pipe_pressure_alarm = event;
         }
@@ -162,10 +161,11 @@ function milesightDeviceDecode(bytes) {
 
             decoded[valve_channel_name + "_calibration"] = event;
         }
-        // OTA TASK EVENT
+        // OTA TASK RESULT
         else if (channel_id === 0x0d && channel_type === 0x01) {
-            var task_result = buffer.readUInt8();
-            decoded.ota_task_result = readOTATaskResult(task_result);
+            var result = buffer.readUInt8();
+
+            decoded.ota_task_result = readOTATaskResult(result);
         }
         // VALVE EXCEPTION
         else if (includes(valve_exception_chns, channel_id) && channel_type === 0xf6) {
