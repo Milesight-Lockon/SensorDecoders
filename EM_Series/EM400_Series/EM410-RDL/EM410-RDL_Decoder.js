@@ -21,6 +21,28 @@ function Decoder(bytes, port) {
     return milesightDeviceDecode(bytes);
 }
 
+function CellularDecoder(bytes) {
+    var payload = {};
+    var offset = 0;
+    payload.start_flag = bytes[offset];
+    payload.id = readUInt16BE(bytes.slice(offset + 1, offset + 3));
+    payload.length = readUInt16BE(bytes.slice(offset + 3, offset + 5));
+    payload.flag = bytes[offset + 5];
+    payload.tsl_version = readTslVersion(bytes.slice(offset + 6, offset + 8));
+    payload.protocol_version = bytes[offset + 8];
+    payload.firmware_version = readAscii(bytes.slice(offset + 9, offset + 13));
+    payload.hardware_version = readAscii(bytes.slice(offset + 13, offset + 17));
+    payload.sn = readAscii(bytes.slice(offset + 17, offset + 33));
+    payload.imei = readAscii(bytes.slice(offset + 33, offset + 48));
+    payload.imsi = readAscii(bytes.slice(offset + 48, offset + 63));
+    payload.icc_id = readAscii(bytes.slice(offset + 63, offset + 83));
+    payload.csq = bytes[offset + 83];
+    payload.data_length = readUInt16BE(bytes.slice(offset + 84, offset + 86));
+    payload.data = milesightDeviceDecode(bytes.slice(offset + 86));
+
+    return payload;
+}
+
 function milesightDeviceDecode(bytes) {
     var decoded = {};
 
@@ -209,8 +231,18 @@ function readUInt16LE(bytes) {
     return value & 0xffff;
 }
 
+function readUInt16BE(bytes) {
+    var value = (bytes[0] << 8) + bytes[1];
+    return value & 0xffff;
+}
+
 function readInt16LE(bytes) {
     var ref = readUInt16LE(bytes);
+    return ref > 0x7fff ? ref - 0x10000 : ref;
+}
+
+function readInt16BE(bytes) {
+    var ref = readUInt16BE(bytes);
     return ref > 0x7fff ? ref - 0x10000 : ref;
 }
 
@@ -219,9 +251,23 @@ function readUInt32LE(bytes) {
     return (value & 0xffffffff) >>> 0;
 }
 
+function readUInt32BE(bytes) {
+    var value = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
+    return (value & 0xffffffff) >>> 0;
+}
+
 function readInt32LE(bytes) {
     var ref = readUInt32LE(bytes);
     return ref > 0x7fffffff ? ref - 0x100000000 : ref;
+}
+
+function readInt32BE(bytes) {
+    var ref = readUInt32BE(bytes);
+    return ref > 0x7fffffff ? ref - 0x100000000 : ref;
+}
+
+function readAscii(bytes) {
+    return bytes.toString().replace(/\0/g, "");
 }
 
 function readProtocolVersion(bytes) {
