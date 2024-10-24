@@ -65,7 +65,7 @@ function readLiquidStatus(type) {
         case 1:
             return "full";
         case 2:
-            return "empty";
+            return "critical liquid level alert";
         case 0xff:
             return "error";
         default:
@@ -76,9 +76,9 @@ function readLiquidStatus(type) {
 function readAlarmType(type) {
     switch (type) {
         case 0:
-            return "empty alarm release";
+            return "critical liquid level alarm release";
         case 1:
-            return "empty alarm";
+            return "critical liquid level alarm";
         default:
             return "unknown";
     }
