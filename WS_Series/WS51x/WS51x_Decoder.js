@@ -95,7 +95,14 @@ function milesightDeviceDecode(bytes) {
         }
         // TEMPERATURE (@since v1.9)
         else if (channel_id === 0x09 && channel_type === 0x67) {
-            decoded.temperature = readInt16LE(bytes.slice(i, i + 2)) / 10;
+            var temperature_value = readUInt16LE(bytes.slice(i, i + 2));
+            if (temperature_value === 0xfffd) {
+                decoded.temperature_exception = "over range alarm";
+            } else if (temperature_value === 0xffff) {
+                decoded.temperature_exception = "read failed";
+            } else {
+                decoded.temperature = readInt16LE(bytes.slice(i, i + 2)) / 10;
+            }
             i += 2;
         }
         // TEMPERATURE THRESHOLD ALARM (@since v2.1)
