@@ -30,8 +30,8 @@ function CellularDecoder(bytes) {
     payload.flag = bytes[offset + 5];
     payload.tsl_version = readTslVersion(bytes.slice(offset + 6, offset + 8));
     payload.protocol_version = bytes[offset + 8];
-    payload.firmware_version = readAscii(bytes.slice(offset + 9, offset + 13));
-    payload.hardware_version = readAscii(bytes.slice(offset + 13, offset + 17));
+    payload.firmware_version = readFirmwareVersion(readAsciiStringToBytes(bytes.slice(offset + 9, offset + 13)));
+    payload.hardware_version = readHardwareVersion(readAsciiStringToBytes(bytes.slice(offset + 13, offset + 17)));
     payload.sn = readAscii(bytes.slice(offset + 17, offset + 33));
     payload.imei = readAscii(bytes.slice(offset + 33, offset + 48));
     payload.imsi = readAscii(bytes.slice(offset + 48, offset + 63));
@@ -267,7 +267,24 @@ function readInt32BE(bytes) {
 }
 
 function readAscii(bytes) {
-    return bytes.toString().replace(/\0/g, "");
+    // to hex string
+    var result = "";
+    for (var idx = 0; idx < bytes.length; idx++) {
+        result += String.fromCharCode(bytes[idx]);
+    }
+
+    return result;
+}
+
+function readAsciiStringToBytes(bytes) {
+    var hexString = readAscii(bytes);
+    var temp = [];
+    for (var idx = 0; idx < hexString.length; idx += 2) {
+        var data = hexString.slice(idx, idx + 2);
+        temp.push(parseInt(data, 16));
+    }
+
+    return temp;
 }
 
 function readProtocolVersion(bytes) {
